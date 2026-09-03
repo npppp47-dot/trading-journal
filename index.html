@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Trading Journal</title>
+<meta name="theme-color" content="#0e1210">
+<style>
+  :root{
+    --bg:#0e1210; --panel:#161c19; --panel-2:#1c231f; --line:#2a332d;
+    --gold:#c9a24b; --amber:#d9a441; --green:#5fbf7a; --red:#e0685f;
+    --text:#e8e6df; --text-dim:#9aa39c;
+    --font-display: Georgia, 'Times New Roman', serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; background:var(--bg); color:var(--text); font-family:var(--font-body);
+    padding-bottom:40px;
+  }
+  .wrap{max-width:640px; margin:0 auto; padding:16px 14px;}
+  h1{
+    font-family:var(--font-display); font-weight:400; font-size:22px; text-align:center;
+    margin:6px 0 16px; color:var(--gold);
+  }
+  .loading{text-align:center; padding:60px 0; color:var(--text-dim); font-size:13px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:16px;}
+  .tab{
+    flex:1; text-align:center; padding:9px 0; border-radius:9px; font-size:13px;
+    cursor:pointer; color:var(--text-dim); background:var(--panel); border:1px solid var(--line);
+  }
+  .tab.active{background:var(--panel-2); color:var(--gold); font-weight:600; border-color:var(--gold);}
+
+  .section{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    margin-bottom:14px; overflow:hidden;
+  }
+  .section-head{
+    padding:10px 14px; border-bottom:1px solid var(--line); display:flex;
+    justify-content:space-between; align-items:center;
+  }
+  .section-head .title{font-size:13px; font-weight:600; color:var(--text);}
+  .section-head .sub{font-size:11px; color:var(--text-dim);}
+
+  .field{padding:10px 14px; border-bottom:1px solid var(--line);}
+  .field:last-child{border-bottom:none;}
+  .field label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:5px;}
+  .field input, .field select, .field textarea{
+    width:100%; background:var(--bg); border:1px solid var(--line); border-radius:8px;
+    color:var(--text); font-size:14.5px; padding:9px 10px; font-family:var(--font-body);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--gold);}
+  .field textarea{min-height:64px; resize:vertical;}
+  .row2{display:flex; gap:10px;}
+  .row2 .field{flex:1; padding:10px 14px;}
+  .row2{padding:0;}
+  .field.row2-wrap{display:flex; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line);}
+  .field.row2-wrap > div{flex:1;}
+  .field.row2-wrap label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:5px;}
+  .field.row2-wrap input, .field.row2-wrap select{
+    width:100%; background:var(--bg); border:1px solid var(--line); border-radius:8px;
+    color:var(--text); font-size:14.5px; padding:9px 10px; font-family:var(--font-body);
+  }
+
+  .chips{display:flex; flex-wrap:wrap; gap:7px;}
+  .chip{
+    padding:6px 11px; border-radius:20px; border:1px solid var(--line); background:var(--bg);
+    font-size:12px; color:var(--text-dim); cursor:pointer; user-select:none;
+  }
+  .chip.on{background:rgba(201,162,75,0.15); border-color:var(--gold); color:var(--gold); font-weight:600;}
+
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--line);}
+  .toggle-row label{font-size:13px; color:var(--text);}
+  .switch{position:relative; width:42px; height:24px; flex-shrink:0;}
+  .switch input{opacity:0; width:0; height:0;}
+  .slider{position:absolute; cursor:pointer; inset:0; background:var(--line); border-radius:24px; transition:0.2s;}
+  .slider:before{position:absolute; content:""; height:18px; width:18px; left:3px; bottom:3px; background:var(--text-dim); border-radius:50%; transition:0.2s;}
+  input:checked + .slider{background:rgba(201,162,75,0.35);}
+  input:checked + .slider:before{background:var(--gold); transform:translateX(18px);}
+
+  .shot-row{display:flex; gap:10px; padding:12px 14px;}
+  .shot-box{
+    flex:1; aspect-ratio:16/10; border:1.5px dashed var(--line); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:4px;
+    color:var(--text-dim); font-size:11.5px; cursor:pointer; overflow:hidden; position:relative;
+    background:var(--bg);
+  }
+  .shot-box img{width:100%; height:100%; object-fit:cover;}
+  .shot-box input{display:none;}
+  .shot-box .lbl{position:absolute; top:5px; left:7px; font-size:10px; background:rgba(0,0,0,0.55); padding:2px 7px; border-radius:5px; color:var(--text);}
+
+  .calc-strip{display:flex; justify-content:space-around; padding:12px 14px; text-align:center;}
+  .calc-strip .c{flex:1;}
+  .calc-strip .c .num{font-family:var(--font-display); font-size:16px;}
+  .calc-strip .c .lbl{font-size:10px; color:var(--text-dim); margin-top:2px;}
+  .pos{color:var(--green);} .neg{color:var(--red);} .neu{color:var(--text-dim);}
+
+  .save-btn{
+    width:100%; background:var(--gold); color:#0e1210; border:none; border-radius:10px;
+    padding:13px 0; font-size:15px; font-weight:700; cursor:pointer; margin-bottom:20px;
+  }
+  .save-btn:active{opacity:0.85;}
+  .cancel-btn{
+    width:100%; background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:10px;
+    padding:11px 0; font-size:13.5px; cursor:pointer; margin-bottom:20px; margin-top:-10px;
+  }
+
+  /* Journal list */
+  .filter-row{display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;}
+  .filter-chip{
+    padding:6px 12px; border-radius:20px; border:1px solid var(--line); background:var(--panel);
+    font-size:11.5px; color:var(--text-dim); cursor:pointer;
+  }
+  .filter-chip.on{background:var(--panel-2); border-color:var(--gold); color:var(--gold); font-weight:600;}
+  .trade-card{
+    display:flex; gap:10px; background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:10px 12px; margin-bottom:9px; cursor:pointer; align-items:center;
+  }
+  .trade-card .thumb{
+    width:52px; height:52px; border-radius:8px; object-fit:cover; background:var(--bg); flex-shrink:0;
+    border:1px solid var(--line);
+  }
+  .trade-card .thumb.empty{display:flex; align-items:center; justify-content:center; color:var(--text-dim); font-size:9px; text-align:center;}
+  .trade-card .info{flex:1; min-width:0;}
+  .trade-card .l1{display:flex; justify-content:space-between; font-size:13.5px; font-weight:600;}
+  .trade-card .l2{display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim); margin-top:3px;}
+  .trade-card .dir{font-size:10px; padding:1px 6px; border-radius:5px; margin-left:6px;}
+  .dir.buy{background:rgba(95,191,122,0.15); color:var(--green);}
+  .dir.sell{background:rgba(224,104,95,0.15); color:var(--red);}
+  .empty-state{text-align:center; padding:50px 0; color:var(--text-dim); font-size:13px;}
+
+  /* Detail view */
+  .back-btn{display:inline-flex; align-items:center; gap:5px; color:var(--gold); font-size:13px; margin-bottom:14px; cursor:pointer;}
+  .detail-shots{display:flex; gap:10px; margin-bottom:14px;}
+  .detail-shots img{width:100%; border-radius:10px; border:1px solid var(--line);}
+  .detail-grid{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line);}
+  .detail-grid .dg-item{background:var(--panel); padding:10px 12px;}
+  .detail-grid .dg-item .k{font-size:10.5px; color:var(--text-dim);}
+  .detail-grid .dg-item .v{font-size:14px; margin-top:2px;}
+  .detail-actions{display:flex; gap:10px; margin-top:14px;}
+  .detail-actions button{flex:1; padding:11px 0; border-radius:9px; font-size:13.5px; cursor:pointer; border:1px solid var(--line);}
+  .btn-edit{background:var(--panel-2); color:var(--gold);}
+  .btn-delete{background:rgba(224,104,95,0.12); color:var(--red);}
+  .notes-box{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; font-size:13px; line-height:1.5; margin-top:12px;}
+  .tag-list{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+  .tag{background:var(--panel-2); border:1px solid var(--line); border-radius:20px; padding:3px 10px; font-size:11px; color:var(--text-dim);}
+
+  /* Reports */
+  .stats{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px; text-align:center;}
+  .stat .num{font-family:var(--font-display); font-size:22px;}
+  .stat .label{font-size:11px; color:var(--text-dim); margin-top:3px;}
+  .rpt-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .rpt-table th{text-align:left; color:var(--text-dim); font-weight:500; font-size:11px; padding:6px 8px; border-bottom:1px solid var(--line);}
+  .rpt-table td{padding:8px; border-bottom:1px solid var(--line);}
+  .rpt-table tr:last-child td{border-bottom:none;}
+
+  /* Import */
+  .import-drop{
+    border:1.5px dashed var(--line); border-radius:12px; padding:30px 16px; text-align:center;
+    color:var(--text-dim); font-size:13px; cursor:pointer; margin-bottom:14px; background:var(--panel);
+  }
+  .import-drop input{display:none;}
+  .import-drop .big{font-size:26px; margin-bottom:8px;}
+  .map-row{display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid var(--line);}
+  .map-row:last-child{border-bottom:none;}
+  .map-row .k{width:110px; font-size:12px; color:var(--text-dim); flex-shrink:0;}
+  .map-row select{
+    flex:1; background:var(--bg); border:1px solid var(--line); border-radius:8px;
+    color:var(--text); font-size:13px; padding:7px 8px; font-family:var(--font-body);
+  }
+  .import-preview-table{width:100%; border-collapse:collapse; font-size:11.5px; overflow-x:auto; display:block;}
+  .import-preview-table th{text-align:left; color:var(--text-dim); font-weight:500; padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  .import-preview-table td{padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  .import-summary{font-size:12px; color:var(--text-dim); padding:10px 14px;}
+  .import-progress{text-align:center; padding:20px; color:var(--gold); font-size:13px;}
+
+  /* Login */
+  .login-wrap{max-width:340px; margin:60px auto; padding:0 14px;}
+  .login-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:26px 22px;}
+  .login-card h2{font-family:var(--font-display); font-weight:400; font-size:20px; margin:0 0 4px; color:var(--gold);}
+  .login-card .sub{font-size:12px; color:var(--text-dim); margin-bottom:18px;}
+  .login-card input{
+    width:100%; background:var(--bg); border:1px solid var(--line); border-radius:8px;
+    color:var(--text); font-size:14.5px; padding:10px 11px; font-family:var(--font-body); margin-bottom:10px;
+  }
+  .login-card input:focus{outline:none; border-color:var(--gold);}
+  .login-btn{
+    width:100%; background:var(--gold); color:#0e1210; border:none; border-radius:8px;
+    padding:11px 0; font-size:14px; font-weight:600; cursor:pointer; margin-top:4px;
+  }
+  .login-error{color:var(--red); font-size:12px; margin-top:10px; min-height:14px;}
+  .login-toggle{text-align:center; font-size:12px; color:var(--text-dim); margin-top:14px; text-decoration:underline; cursor:pointer;}
+  .login-userbar{display:flex; justify-content:space-between; align-items:center; font-size:11.5px; color:var(--text-dim); margin-bottom:10px;}
+  .login-userbar .signout{text-decoration:underline; cursor:pointer;}
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBDnfturKmMcCEhN_UZ04kAP6hUTOxmTPU",
+    authDomain: "tracker-412e6.firebaseapp.com",
+    projectId: "tracker-412e6",
+    storageBucket: "tracker-412e6.firebasestorage.app",
+    messagingSenderId: "1031245574504",
+    appId: "1:1031245574504:web:f845cd9f9fa62dc572e6dd"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+</script>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="loading">Loading...</div>
+</div>
+<script>
+/* ---------- Constants ---------- */
+const STRATEGIES = [
+  "Always In","Always In Long","Always In Short","Bar Pullback","Bear Scalp","Bull Reversal","Bear Reversal",
+  "Blown Account","Breakout","Breakout Bar","Breakout Mode","Breakout Pullback","Breakout Test","Failed Breakout",
+  "Buying Pressure","Selling Pressure","Climax","Counter-trend","Counter-trend Scalp","Dog Trade",
+  "Discretionary Probability","Doji","Double Bottom","Double Bottom Pullback","Double Bottom Bull Flag",
+  "Double Top","Double Top Bear Flag","Double Top Trend Turn","Double Bottom Trend Turn","Down-Up Twin","Up-Down Twin",
+  "Early Longs","Early Shorts","Edge","EMA","Entry Bar","Fade","Failed Failure","Failed to Follow Through",
+  "Flag","Bull Flag","Bear Flag","Flat","Follow Through","Follow Through Bar","Gap","Gap Bar","Gap Reversal",
+  "HTF (High/Tight Flag)","High 1","High 2","High 3","High 4","Higher High","Higher Low","Inside Bar","ii","iii",
+  "Institutional","Ledge","Leg","Liquidity","Low 1","Low 2","Low 3","Low 4","Lower High","Lower Low","Magnet",
+  "Measured Move","Measuring Gap","Major Trend Line","Micro","Micro Channel","Micro Double Bottom","Micro Double Top",
+  "Micro Measuring Gap","Micro Trend Channel Line","Micro Trend Line Break","Moving Average","Moving Average Gap",
+  "Moving Average Gap Bar","Nesting","Neutral","OO (Outside-Outside)","Opening Reversal","Opposite Twins",
+  "Outside Bar","Outside Bar Down","Outside Bar Up","Overtrading","Pause Bar","Passing Through Longs/Shorts",
+  "Probability","Pullback","Pull Up","Pull Down","Reversal","Risk","Risk On","Risk Off","Risky","Scalp",
+  "Scalper's Profit","Second Entry","Second Signal","Second Entry Moving Average Gap","Setup","Shaved Body",
+  "Signal Bar","Small Bar","Small Pullback","Spike and Channel","ST (Strong Trend)","STF (Small Trend Flag)",
+  "Strong Bull Bar","Strong Bear Bar","Success","Swing","Swing High","Swing Low","Swing Point","Tight Channel",
+  "Tight Trading Range","Trap","Trapped Out of a Trade","Trend","Trend Bar","Trend Channel Line",
+  "Trend Channel Line Overshoot","Trend Channel Line Undershoot","Trend From the Open","Trend Line","Trend Reversal",
+  "Tradable","Trader's Equation","Trading Range","Trailing Stop","Trading Closes","Trading Highs or Lows",
+  "Trading Swings","Trending Trading Range","Twin","Two Bar Reversal","Undershoot","Overshoot","Unlikely",
+  "Unreasonable","Usually","Vacuum","Wedge","Wedge Flag","Wedge Reversal","With Trend","Against Trend",
+  "H1 / H2 (High 1 / High 2)","L1 / L2 (Low 1 / Low 2)","Other"
+];
+const MISTAKES = ["Early entry","Late entry","No stop loss","Moved SL against","Overtrading","FOMO entry","Revenge trade","Ignored plan","Oversized position","Held too long","Exited too early"];
+const CONDITIONS = ["Trending Up","Trending Down","Ranging","Volatile / News"];
+const EMOTIONS = ["Calm","Confident","FOMO","Revenge","Anxious","Bored","Hesitant"];
+
+/* ---------- State ---------- */
+let view = 'new'; // 'new' | 'list' | 'detail' | 'reports'
+let trades = [];
+let tradesLoaded = false;
+let editingId = null;
+let detailId = null;
+let listFilter = 'all'; // all | today | week | month
+let reportFilter = 'all';
+let formShots = { entry: null, exit: null };
+let formMistakes = [];
+let authMode = 'signin';
+
+/* ---------- Helpers ---------- */
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(d){
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'});
+}
+function fmtMoney(n){
+  const v = Number(n)||0;
+  const sign = v<0 ? '-' : '';
+  return sign + Math.abs(v).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' USDT';
+}
+function minutesBetween(t1, t2){
+  if(!t1 || !t2) return null;
+  const [h1,m1] = t1.split(':').map(Number);
+  const [h2,m2] = t2.split(':').map(Number);
+  let diff = (h2*60+m2) - (h1*60+m1);
+  if(diff < 0) diff += 24*60;
+  return diff;
+}
+function fmtDuration(mins){
+  if(mins === null) return '—';
+  const h = Math.floor(mins/60), m = mins%60;
+  return h>0 ? `${h}h ${m}m` : `${m}m`;
+}
+function computeMetrics(t){
+  const entry = Number(t.entryPrice), exit = Number(t.exitPrice), sl = Number(t.sl), tp = Number(t.tp);
+  const risk = (t.sl!=='' && t.entryPrice!=='') ? Math.abs(entry - sl) : null;
+  const reward = (t.tp!=='' && t.entryPrice!=='') ? Math.abs(tp - entry) : null;
+  const rr = (risk && reward) ? (reward/risk) : null;
+  let actualR = null;
+  if(risk && t.exitPrice!==''){
+    const move = t.direction === 'Sell' ? (entry - exit) : (exit - entry);
+    actualR = move / risk;
+  }
+  const pnl = Number(t.pnl)||0, brokerage = Number(t.brokerage)||0;
+  const netPnl = pnl - brokerage;
+  const duration = minutesBetween(t.entryTime, t.exitTime);
+  const outcome = netPnl > 0 ? 'Win' : (netPnl < 0 ? 'Loss' : 'Breakeven');
+  return { risk, reward, rr, actualR, netPnl, duration, outcome };
+}
+function compressImage(file, maxWidth, quality){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > maxWidth){ h = Math.round(h * (maxWidth/w)); w = maxWidth; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ---------- Firestore ---------- */
+function tradesRef(){
+  const uid = auth.currentUser && auth.currentUser.uid;
+  if(!uid) throw new Error('Not signed in');
+  return db.collection('users').doc(uid).collection('journalTrades');
+}
+async function loadTrades(){
+  try{
+    const snap = await tradesRef().get();
+    trades = [];
+    snap.forEach(doc => trades.push({ id: doc.id, ...doc.data() }));
+    trades.sort((a,b)=> (b.date+b.entryTime).localeCompare(a.date+a.entryTime));
+    tradesLoaded = true;
+  }catch(e){ console.error('load failed', e); trades = []; tradesLoaded = true; }
+}
+async function saveTrade(data, id){
+  if(id){
+    await tradesRef().doc(id).set(data);
+  } else {
+    await tradesRef().add(data);
+  }
+}
+async function deleteTradeDoc(id){
+  await tradesRef().doc(id).delete();
+}
+
+/* ---------- Root / Tabs ---------- */
+async function renderRoot(){
+  const app = document.getElementById('app');
+  const userEmail = auth.currentUser ? auth.currentUser.email : '';
+  app.innerHTML = `
+    <div class="login-userbar"><span>${userEmail}</span><span class="signout" onclick="doSignOut()">Sign out</span></div>
+    <h1>Trading Journal</h1>
+    <div class="tabs">
+      <div class="tab ${view==='new'?'active':''}" onclick="switchView('new')">New Trade</div>
+      <div class="tab ${view==='list'||view==='detail'?'active':''}" onclick="switchView('list')">Journal</div>
+      <div class="tab ${view==='reports'?'active':''}" onclick="switchView('reports')">Reports</div>
+      <div class="tab ${view==='import'?'active':''}" onclick="switchView('import')">Import</div>
+    </div>
+    <div id="view-body"><div class="loading">Loading...</div></div>
+  `;
+  if(!tradesLoaded) await loadTrades();
+  if(view==='new') renderNewTradeForm();
+  else if(view==='list') renderJournalList();
+  else if(view==='detail') renderDetail();
+  else if(view==='import') renderImportView();
+  else renderReports();
+}
+function switchView(v){
+  view = v;
+  if(v==='new'){ editingId = null; formShots = {entry:null, exit:null}; formMistakes = []; }
+  renderRoot();
+}
+
+/* ---------- New Trade Form ---------- */
+function renderNewTradeForm(prefill){
+  const t = prefill || {
+    date: todayStr(), entryTime:'', exitTime:'', symbol:'', direction:'Buy', lot:'',
+    tradeNo:'', strategy: '', entryPrice:'', exitPrice:'', sl:'', tp:'',
+    pnl:'', brokerage:'', ruleFollowed:true, marketCondition: CONDITIONS[0], emotion: EMOTIONS[0],
+    confidence:'3', notes:''
+  };
+  if(!prefill) formMistakes = [];
+  const body = document.getElementById('view-body');
+  body.innerHTML = `
+    <div class="section">
+      <div class="section-head"><span class="title">${editingId?'Edit Trade':'Trade Details'}</span></div>
+      <div class="field"><label>Date</label><input type="date" id="f-date" value="${t.date}"></div>
+      <div class="field row2-wrap">
+        <div><label>Entry time</label><input type="time" id="f-entrytime" value="${t.entryTime}"></div>
+        <div><label>Exit time</label><input type="time" id="f-exittime" value="${t.exitTime}"></div>
+      </div>
+      <div class="field row2-wrap">
+        <div><label>Script / Symbol</label><input type="text" id="f-symbol" placeholder="e.g. NIFTY, BANKNIFTY, TCS" value="${t.symbol}"></div>
+        <div><label>Direction</label><select id="f-direction"><option ${t.direction==='Buy'?'selected':''}>Buy</option><option ${t.direction==='Sell'?'selected':''}>Sell</option></select></div>
+      </div>
+      <div class="field row2-wrap">
+        <div><label>Lot / Qty</label><input type="number" id="f-lot" value="${t.lot}" placeholder="e.g. 1"></div>
+        <div><label>Trade No. of the day</label><input type="number" id="f-tradeno" value="${t.tradeNo}" placeholder="e.g. 2"></div>
+      </div>
+      <div class="field"><label>Strategy / Setup</label>
+        <input type="text" id="f-strategy" list="strategy-options" placeholder="Type to search... e.g. Double Top, Wedge, Trend Channel" value="${t.strategy}">
+        <datalist id="strategy-options">${STRATEGIES.map(s=>`<option value="${s}">`).join('')}</datalist>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><span class="title">Levels</span></div>
+      <div class="field row2-wrap">
+        <div><label>Entry price</label><input type="number" id="f-entryprice" value="${t.entryPrice}"></div>
+        <div><label>Exit price</label><input type="number" id="f-exitprice" value="${t.exitPrice}"></div>
+      </div>
+      <div class="field row2-wrap">
+        <div><label>Stop Loss (SL)</label><input type="number" id="f-sl" value="${t.sl}"></div>
+        <div><label>Target (TP)</label><input type="number" id="f-tp" value="${t.tp}"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><span class="title">P&L</span></div>
+      <div class="field row2-wrap">
+        <div><label>Profit / Loss (USDT)</label><input type="number" id="f-pnl" value="${t.pnl}" placeholder="use − for loss"></div>
+        <div><label>Brokerage (USDT)</label><input type="number" id="f-brokerage" value="${t.brokerage}"></div>
+      </div>
+      <div class="calc-strip" id="calc-preview"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><span class="title">Discipline</span></div>
+      <div class="toggle-row">
+        <label>Rule followed?</label>
+        <label class="switch"><input type="checkbox" id="f-rule" ${t.ruleFollowed?'checked':''}><span class="slider"></span></label>
+      </div>
+      <div class="field"><label>Mistakes made (tap to select)</label>
+        <div class="chips" id="mistake-chips">${MISTAKES.map(m=>`<span class="chip ${formMistakes.includes(m)?'on':''}" onclick="toggleMistake('${m.replace(/'/g,"\\'")}')">${m}</span>`).join('')}</div>
+      </div>
+      <div class="field"><label>Market condition</label>
+        <select id="f-condition">${CONDITIONS.map(c=>`<option ${t.marketCondition===c?'selected':''}>${c}</option>`).join('')}</select>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><span class="title">Psychology</span></div>
+      <div class="field"><label>Emotion before / during trade</label>
+        <select id="f-emotion">${EMOTIONS.map(e=>`<option ${t.emotion===e?'selected':''}>${e}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Confidence level (1 = low, 5 = high)</label>
+        <select id="f-confidence">${[1,2,3,4,5].map(n=>`<option value="${n}" ${String(t.confidence)===String(n)?'selected':''}>${n}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Notes / lesson learned</label><textarea id="f-notes" placeholder="What went well, what to improve...">${t.notes||''}</textarea></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><span class="title">Screenshots</span></div>
+      <div class="shot-row">
+        <label class="shot-box" id="shot-entry-box">
+          <span class="lbl">Entry</span>
+          ${formShots.entry ? `<img src="${formShots.entry}">` : `<span>+ Add entry screenshot</span>`}
+          <input type="file" accept="image/*" id="shot-entry" onchange="handleShot(this,'entry')">
+        </label>
+        <label class="shot-box" id="shot-exit-box">
+          <span class="lbl">Exit</span>
+          ${formShots.exit ? `<img src="${formShots.exit}">` : `<span>+ Add exit screenshot</span>`}
+          <input type="file" accept="image/*" id="shot-exit" onchange="handleShot(this,'exit')">
+        </label>
+      </div>
+    </div>
+
+    <button class="save-btn" onclick="submitTrade()">${editingId?'Update Trade':'Save Trade'}</button>
+    ${editingId?`<button class="cancel-btn" onclick="switchView('detail')">Cancel</button>`:''}
+  `;
+  ['f-entrytime','f-exittime','f-entryprice','f-exitprice','f-sl','f-tp','f-pnl','f-brokerage','f-direction'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', updateCalcPreview);
+    if(el) el.addEventListener('change', updateCalcPreview);
+  });
+  updateCalcPreview();
+  if(!prefill){
+    // auto-suggest trade number for today based on existing trades on that date
+    const dateEl = document.getElementById('f-date');
+    dateEl.addEventListener('change', suggestTradeNo);
+    suggestTradeNo();
+  }
+}
+function suggestTradeNo(){
+  const date = document.getElementById('f-date').value;
+  const count = trades.filter(t=>t.date===date).length;
+  const tnEl = document.getElementById('f-tradeno');
+  if(tnEl && !tnEl.value) tnEl.value = count+1;
+}
+function toggleMistake(m){
+  if(formMistakes.includes(m)) formMistakes = formMistakes.filter(x=>x!==m);
+  else formMistakes.push(m);
+  const chips = document.getElementById('mistake-chips');
+  if(chips) chips.innerHTML = MISTAKES.map(mm=>`<span class="chip ${formMistakes.includes(mm)?'on':''}" onclick="toggleMistake('${mm.replace(/'/g,"\\'")}')">${mm}</span>`).join('');
+}
+async function handleShot(input, which){
+  const file = input.files[0];
+  if(!file) return;
+  const dataUrl = await compressImage(file, 700, 0.55);
+  formShots[which] = dataUrl;
+  const box = document.getElementById(`shot-${which}-box`);
+  box.innerHTML = `<span class="lbl">${which==='entry'?'Entry':'Exit'}</span><img src="${dataUrl}"><input type="file" accept="image/*" id="shot-${which}" onchange="handleShot(this,'${which}')">`;
+}
+function updateCalcPreview(){
+  const t = {
+    direction: document.getElementById('f-direction').value,
+    entryPrice: document.getElementById('f-entryprice').value,
+    exitPrice: document.getElementById('f-exitprice').value,
+    sl: document.getElementById('f-sl').value,
+    tp: document.getElementById('f-tp').value,
+    entryTime: document.getElementById('f-entrytime').value,
+    exitTime: document.getElementById('f-exittime').value,
+    pnl: document.getElementById('f-pnl').value,
+    brokerage: document.getElementById('f-brokerage').value
+  };
+  const m = computeMetrics(t);
+  const el = document.getElementById('calc-preview');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="c"><div class="num">${fmtDuration(m.duration)}</div><div class="lbl">Duration</div></div>
+    <div class="c"><div class="num">${m.rr!==null? m.rr.toFixed(2)+':1' : '—'}</div><div class="lbl">Plan R:R</div></div>
+    <div class="c"><div class="num ${m.actualR>0?'pos':(m.actualR<0?'neg':'neu')}">${m.actualR!==null? m.actualR.toFixed(2)+'R' : '—'}</div><div class="lbl">Actual R</div></div>
+    <div class="c"><div class="num ${m.netPnl>0?'pos':(m.netPnl<0?'neg':'neu')}">${fmtMoney(m.netPnl)}</div><div class="lbl">Net P&L</div></div>
+  `;
+}
+async function submitTrade(){
+  const data = {
+    date: document.getElementById('f-date').value,
+    entryTime: document.getElementById('f-entrytime').value,
+    exitTime: document.getElementById('f-exittime').value,
+    symbol: document.getElementById('f-symbol').value.trim(),
+    direction: document.getElementById('f-direction').value,
+    lot: document.getElementById('f-lot').value,
+    tradeNo: document.getElementById('f-tradeno').value,
+    strategy: document.getElementById('f-strategy').value,
+    entryPrice: document.getElementById('f-entryprice').value,
+    exitPrice: document.getElementById('f-exitprice').value,
+    sl: document.getElementById('f-sl').value,
+    tp: document.getElementById('f-tp').value,
+    pnl: document.getElementById('f-pnl').value,
+    brokerage: document.getElementById('f-brokerage').value,
+    ruleFollowed: document.getElementById('f-rule').checked,
+    mistakes: formMistakes,
+    marketCondition: document.getElementById('f-condition').value,
+    emotion: document.getElementById('f-emotion').value,
+    confidence: document.getElementById('f-confidence').value,
+    notes: document.getElementById('f-notes').value,
+    entryShot: formShots.entry,
+    exitShot: formShots.exit,
+    savedAt: Date.now()
+  };
+  if(!data.symbol){ alert('Please enter the script / symbol'); return; }
+  const id = editingId;
+  await saveTrade(data, id);
+  tradesLoaded = false;
+  await loadTrades();
+  if(id){ detailId = id; view = 'detail'; editingId = null; renderRoot(); }
+  else { view = 'list'; renderRoot(); }
+}
+
+/* ---------- Journal List ---------- */
+function filterTrades(list, filter){
+  if(filter==='all') return list;
+  const now = new Date();
+  return list.filter(t=>{
+    const d = new Date(t.date + 'T00:00:00');
+    if(filter==='today') return t.date === todayStr();
+    if(filter==='week'){
+      const day = (now.getDay()+6)%7;
+      const monday = new Date(now); monday.setDate(now.getDate()-day); monday.setHours(0,0,0,0);
+      return d >= monday;
+    }
+    if(filter==='month') return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+    return true;
+  });
+}
+function renderJournalList(){
+  const body = document.getElementById('view-body');
+  const filtered = filterTrades(trades, listFilter);
+  body.innerHTML = `
+    <div class="filter-row">
+      ${['all','today','week','month'].map(f=>`<span class="filter-chip ${listFilter===f?'on':''}" onclick="setListFilter('${f}')">${f==='all'?'All':f==='today'?'Today':f==='week'?'This week':'This month'}</span>`).join('')}
+    </div>
+    ${filtered.length===0 ? `<div class="empty-state">No trades ${listFilter==='all'?'logged yet':'in this period'}.</div>` : filtered.map(t=>{
+      const m = computeMetrics(t);
+      return `<div class="trade-card" onclick="openDetail('${t.id}')">
+        ${t.entryShot ? `<img class="thumb" src="${t.entryShot}">` : `<div class="thumb empty">No shot</div>`}
+        <div class="info">
+          <div class="l1"><span>${t.symbol}<span class="dir ${t.direction==='Buy'?'buy':'sell'}">${t.direction}</span></span><span class="${m.netPnl>0?'pos':(m.netPnl<0?'neg':'neu')}">${fmtMoney(m.netPnl)}</span></div>
+          <div class="l2"><span>${fmtDate(t.date)} · ${t.strategy}</span><span>${m.actualR!==null?m.actualR.toFixed(2)+'R':''}</span></div>
+        </div>
+      </div>`;
+    }).join('')}
+  `;
+}
+function setListFilter(f){ listFilter = f; renderJournalList(); }
+function openDetail(id){ detailId = id; view = 'detail'; renderRoot(); }
+
+/* ---------- Detail View ---------- */
+function renderDetail(){
+  const t = trades.find(x=>x.id===detailId);
+  const body = document.getElementById('view-body');
+  if(!t){ body.innerHTML = `<div class="empty-state">Trade not found.</div>`; return; }
+  const m = computeMetrics(t);
+  body.innerHTML = `
+    <div class="back-btn" onclick="switchView('list')">‹ Back to Journal</div>
+    ${(t.entryShot || t.exitShot) ? `<div class="detail-shots">
+      ${t.entryShot?`<img src="${t.entryShot}">`:''}
+      ${t.exitShot?`<img src="${t.exitShot}">`:''}
+    </div>` : ''}
+    <div class="section">
+      <div class="section-head"><span class="title">${t.symbol} <span class="dir ${t.direction==='Buy'?'buy':'sell'}">${t.direction}</span></span><span class="sub">${fmtDate(t.date)}</span></div>
+      <div class="detail-grid">
+        <div class="dg-item"><div class="k">Entry / Exit time</div><div class="v">${t.entryTime||'—'} → ${t.exitTime||'—'}</div></div>
+        <div class="dg-item"><div class="k">Duration</div><div class="v">${fmtDuration(m.duration)}</div></div>
+        <div class="dg-item"><div class="k">Lot / Qty</div><div class="v">${t.lot||'—'}</div></div>
+        <div class="dg-item"><div class="k">Trade # of day</div><div class="v">${t.tradeNo||'—'}</div></div>
+        <div class="dg-item"><div class="k">Strategy</div><div class="v">${t.strategy}</div></div>
+        <div class="dg-item"><div class="k">Market condition</div><div class="v">${t.marketCondition}</div></div>
+        <div class="dg-item"><div class="k">Entry / Exit price</div><div class="v">${t.entryPrice||'—'} → ${t.exitPrice||'—'}</div></div>
+        <div class="dg-item"><div class="k">SL / TP</div><div class="v">${t.sl||'—'} / ${t.tp||'—'}</div></div>
+        <div class="dg-item"><div class="k">Plan R:R</div><div class="v">${m.rr!==null?m.rr.toFixed(2)+':1':'—'}</div></div>
+        <div class="dg-item"><div class="k">Actual R</div><div class="v ${m.actualR>0?'pos':(m.actualR<0?'neg':'neu')}">${m.actualR!==null?m.actualR.toFixed(2)+'R':'—'}</div></div>
+        <div class="dg-item"><div class="k">Net P&L</div><div class="v ${m.netPnl>0?'pos':(m.netPnl<0?'neg':'neu')}">${fmtMoney(m.netPnl)}</div></div>
+        <div class="dg-item"><div class="k">Outcome</div><div class="v">${m.outcome}</div></div>
+        <div class="dg-item"><div class="k">Rule followed</div><div class="v">${t.ruleFollowed?'Yes':'No'}</div></div>
+        <div class="dg-item"><div class="k">Emotion / Confidence</div><div class="v">${t.emotion} · ${t.confidence}/5</div></div>
+      </div>
+    </div>
+    ${t.mistakes && t.mistakes.length ? `<div class="section" style="padding:12px 14px;"><div class="title" style="font-size:13px; font-weight:600; margin-bottom:6px;">Mistakes</div><div class="tag-list">${t.mistakes.map(mm=>`<span class="tag">${mm}</span>`).join('')}</div></div>` : ''}
+    ${t.notes ? `<div class="notes-box">${t.notes.replace(/</g,'&lt;')}</div>` : ''}
+    <div class="detail-actions">
+      <button class="btn-edit" onclick="editTrade('${t.id}')">Edit</button>
+      <button class="btn-delete" onclick="confirmDeleteTrade('${t.id}')">Delete</button>
+    </div>
+  `;
+}
+async function editTrade(id){
+  const t = trades.find(x=>x.id===id);
+  editingId = id;
+  formShots = { entry: t.entryShot || null, exit: t.exitShot || null };
+  formMistakes = t.mistakes ? [...t.mistakes] : [];
+  view = 'new';
+  const app = document.getElementById('app');
+  const userEmail = auth.currentUser ? auth.currentUser.email : '';
+  app.innerHTML = `
+    <div class="login-userbar"><span>${userEmail}</span><span class="signout" onclick="doSignOut()">Sign out</span></div>
+    <h1>Trading Journal</h1>
+    <div class="tabs">
+      <div class="tab active" onclick="switchView('new')">New Trade</div>
+      <div class="tab" onclick="switchView('list')">Journal</div>
+      <div class="tab" onclick="switchView('reports')">Reports</div>
+      <div class="tab" onclick="switchView('import')">Import</div>
+    </div>
+    <div id="view-body"></div>
+  `;
+  renderNewTradeForm(t);
+}
+async function confirmDeleteTrade(id){
+  if(!confirm('Delete this trade permanently?')) return;
+  await deleteTradeDoc(id);
+  tradesLoaded = false;
+  view = 'list';
+  await renderRoot();
+}
+
+/* ---------- Reports ---------- */
+function renderReports(){
+  const body = document.getElementById('view-body');
+  const filtered = filterTrades(trades, reportFilter);
+  const withMetrics = filtered.map(t=>({t, m: computeMetrics(t)}));
+  const total = withMetrics.length;
+  const wins = withMetrics.filter(x=>x.m.outcome==='Win').length;
+  const losses = withMetrics.filter(x=>x.m.outcome==='Loss').length;
+  const winRate = total ? ((wins/total)*100).toFixed(1) : '0';
+  const netTotal = withMetrics.reduce((s,x)=>s+x.m.netPnl, 0);
+  const rVals = withMetrics.filter(x=>x.m.actualR!==null).map(x=>x.m.actualR);
+  const avgR = rVals.length ? (rVals.reduce((a,b)=>a+b,0)/rVals.length).toFixed(2) : '—';
+  const best = withMetrics.reduce((a,b)=> (a && a.m.netPnl > b.m.netPnl) ? a : b, null);
+  const worst = withMetrics.reduce((a,b)=> (a && a.m.netPnl < b.m.netPnl) ? a : b, null);
+
+  const stratMap = {};
+  withMetrics.forEach(({t,m})=>{
+    if(!stratMap[t.strategy]) stratMap[t.strategy] = {count:0, wins:0, net:0};
+    stratMap[t.strategy].count++;
+    if(m.outcome==='Win') stratMap[t.strategy].wins++;
+    stratMap[t.strategy].net += m.netPnl;
+  });
+  const stratRows = Object.entries(stratMap).sort((a,b)=>b[1].net-a[1].net);
+
+  const mistakeMap = {};
+  withMetrics.forEach(({t})=> (t.mistakes||[]).forEach(mm=> mistakeMap[mm] = (mistakeMap[mm]||0)+1));
+  const mistakeRows = Object.entries(mistakeMap).sort((a,b)=>b[1]-a[1]);
+
+  body.innerHTML = `
+    <div class="filter-row">
+      ${['all','today','week','month'].map(f=>`<span class="filter-chip ${reportFilter===f?'on':''}" onclick="setReportFilter('${f}')">${f==='all'?'All time':f==='today'?'Today':f==='week'?'This week':'This month'}</span>`).join('')}
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="num ${netTotal>0?'pos':(netTotal<0?'neg':'neu')}">${fmtMoney(netTotal)}</div><div class="label">Net P&L</div></div>
+      <div class="stat"><div class="num">${winRate}%</div><div class="label">Win rate (${wins}W / ${losses}L)</div></div>
+      <div class="stat"><div class="num">${total}</div><div class="label">Total trades</div></div>
+      <div class="stat"><div class="num ${avgR!=='—' && avgR>0?'pos':(avgR!=='—' && avgR<0?'neg':'neu')}">${avgR!=='—'?avgR+'R':'—'}</div><div class="label">Avg R multiple</div></div>
+    </div>
+    <div class="section" style="padding:12px 14px;">
+      <div style="display:flex; justify-content:space-between; font-size:12.5px;">
+        <span>Best trade: <b class="pos">${best?fmtMoney(best.m.netPnl):'—'}</b> ${best?`(${best.t.symbol})`:''}</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:12.5px; margin-top:6px;">
+        <span>Worst trade: <b class="neg">${worst?fmtMoney(worst.m.netPnl):'—'}</b> ${worst?`(${worst.t.symbol})`:''}</span>
+      </div>
+    </div>
+    <div class="section" style="padding:12px 14px;">
+      <div class="title" style="font-size:13px; font-weight:600; margin-bottom:8px;">Strategy-wise performance</div>
+      ${stratRows.length ? `<table class="rpt-table"><tr><th>Strategy</th><th>Trades</th><th>Win%</th><th>Net P&L</th></tr>
+        ${stratRows.map(([name,d])=>`<tr><td>${name}</td><td>${d.count}</td><td>${((d.wins/d.count)*100).toFixed(0)}%</td><td class="${d.net>0?'pos':(d.net<0?'neg':'neu')}">${fmtMoney(d.net)}</td></tr>`).join('')}
+      </table>` : `<div class="empty-state" style="padding:16px 0;">No data yet</div>`}
+    </div>
+    <div class="section" style="padding:12px 14px;">
+      <div class="title" style="font-size:13px; font-weight:600; margin-bottom:8px;">Recurring mistakes</div>
+      ${mistakeRows.length ? `<table class="rpt-table"><tr><th>Mistake</th><th>Times</th></tr>
+        ${mistakeRows.map(([name,c])=>`<tr><td>${name}</td><td>${c}</td></tr>`).join('')}
+      </table>` : `<div class="empty-state" style="padding:16px 0;">No mistakes logged — keep it up!</div>`}
+    </div>
+  `;
+}
+function setReportFilter(f){ reportFilter = f; renderReports(); }
+
+/* ---------- CSV Import ---------- */
+let importHeaders = [];
+let importRows = [];
+let importMapping = {};
+let importFileName = '';
+const IMPORT_FIELDS = [
+  {key:'openDateTime', label:'Open Date/Time', required:true},
+  {key:'closeDateTime', label:'Close Date/Time', required:true},
+  {key:'symbol', label:'Symbol', required:true},
+  {key:'direction', label:'Type (Buy/Sell)', required:true},
+  {key:'volume', label:'Lot / Volume', required:false},
+  {key:'openPrice', label:'Open Price', required:false},
+  {key:'closePrice', label:'Close Price', required:false},
+  {key:'sl', label:'Stop Loss', required:false},
+  {key:'tp', label:'Take Profit', required:false},
+  {key:'profit', label:'Profit / P&L', required:true},
+  {key:'commission', label:'Commission', required:false},
+  {key:'swap', label:'Swap', required:false}
+];
+
+function parseDelimitedText(text){
+  const firstLine = text.split(/\r?\n/)[0] || '';
+  const delim = (firstLine.split('\t').length > firstLine.split(',').length) ? '\t' : ',';
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i=0; i<text.length; i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; } else inQuotes = false;
+      } else field += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === delim){ row.push(field); field = ''; }
+      else if(c === '\n' || c === '\r'){
+        if(c === '\r' && text[i+1] === '\n') i++;
+        row.push(field); field = ''; rows.push(row); row = [];
+      } else field += c;
+    }
+  }
+  if(field !== '' || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r => r.length > 1 || (r.length===1 && r[0].trim() !== ''));
+}
+function parseDateTimeStr(str){
+  if(!str) return {date:'', time:''};
+  str = str.trim();
+  let date = '';
+  const m1 = str.match(/(\d{4})[.\-\/](\d{2})[.\-\/](\d{2})/);
+  if(m1) date = `${m1[1]}-${m1[2]}-${m1[3]}`;
+  else{
+    const m2 = str.match(/(\d{2})[.\-\/](\d{2})[.\-\/](\d{4})/);
+    if(m2) date = `${m2[3]}-${m2[2]}-${m2[1]}`;
+  }
+  const tm = str.match(/(\d{2}):(\d{2})(:\d{2})?/);
+  const time = tm ? `${tm[1]}:${tm[2]}` : '';
+  return {date, time};
+}
+function guessColumn(headers, keywords){
+  const lower = headers.map(h => h.toLowerCase());
+  for(const kw of keywords){
+    const idx = lower.findIndex(h => h.includes(kw));
+    if(idx !== -1) return idx;
+  }
+  return -1;
+}
+function autoGuessMapping(headers){
+  const map = {};
+  map.openDateTime = guessColumn(headers, ['open time','opentime','time open','entry time']);
+  map.closeDateTime = guessColumn(headers, ['close time','closetime','time close','exit time']);
+  map.symbol = guessColumn(headers, ['symbol','instrument','pair']);
+  map.direction = guessColumn(headers, ['type','side','direction']);
+  map.volume = guessColumn(headers, ['volume','lot','size','qty']);
+  map.openPrice = guessColumn(headers, ['open price','price open','entry price']);
+  map.closePrice = guessColumn(headers, ['close price','price close','exit price']);
+  map.sl = guessColumn(headers, ['s / l','s/l','stop loss','sl']);
+  map.tp = guessColumn(headers, ['t / p','t/p','take profit','tp']);
+  map.profit = guessColumn(headers, ['profit','p/l','p&l','pnl']);
+  map.commission = guessColumn(headers, ['commission']);
+  map.swap = guessColumn(headers, ['swap']);
+  return map;
+}
+
+function renderImportView(){
+  const body = document.getElementById('view-body');
+  if(!importFileName){
+    body.innerHTML = `
+      <div class="section" style="padding:12px 14px;">
+        <div class="title" style="font-size:13px; font-weight:600; margin-bottom:8px;">Import trades from Exness / MT4 / MT5</div>
+        <div style="font-size:12px; color:var(--text-dim); line-height:1.5;">
+          Export your closed trade history as a <b>CSV file</b> from your Exness Personal Area or MT4/MT5 terminal (History tab → right-click → Save as Report/CSV), then upload it here. You'll map the columns next, preview the trades, and import them in one go — SL, TP, strategy, and screenshots you can add afterwards by editing each trade.
+        </div>
+      </div>
+      <label class="import-drop">
+        <div class="big">📄</div>
+        <div>Tap to choose your CSV file</div>
+        <input type="file" accept=".csv,text/csv" onchange="handleImportFile(this)">
+      </label>
+    `;
+    return;
+  }
+  if(!importRows.length){
+    body.innerHTML = `<div class="empty-state">No data rows found in this file. Try a different export.</div>
+      <button class="cancel-btn" onclick="resetImport()">Choose a different file</button>`;
+    return;
+  }
+  const fieldRows = IMPORT_FIELDS.map(f => `
+    <div class="map-row">
+      <div class="k">${f.label}${f.required?' *':''}</div>
+      <select id="map-${f.key}" onchange="onMappingChange()">
+        <option value="-1">— none —</option>
+        ${importHeaders.map((h,i)=>`<option value="${i}" ${importMapping[f.key]===i?'selected':''}>${h}</option>`).join('')}
+      </select>
+    </div>
+  `).join('');
+
+  body.innerHTML = `
+    <div class="section">
+      <div class="section-head"><span class="title">${importFileName}</span><span class="sub">${importRows.length} rows found</span></div>
+      ${fieldRows}
+    </div>
+    <div class="section" style="padding:12px 14px;">
+      <div class="title" style="font-size:13px; font-weight:600; margin-bottom:8px;">Preview (first 5 rows)</div>
+      <div style="overflow-x:auto;"><table class="import-preview-table" id="import-preview"></table></div>
+    </div>
+    <div class="import-summary" id="import-summary"></div>
+    <button class="save-btn" id="import-btn" onclick="performImport()">Import trades</button>
+    <button class="cancel-btn" onclick="resetImport()">Choose a different file</button>
+  `;
+  renderImportPreview();
+}
+
+function handleImportFile(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    const rows = parseDelimitedText(e.target.result);
+    if(!rows.length){ alert('Could not read any rows from this file.'); return; }
+    importHeaders = rows[0].map(h=>h.trim());
+    importRows = rows.slice(1);
+    importMapping = autoGuessMapping(importHeaders);
+    importFileName = file.name;
+    renderImportView();
+  };
+  reader.readAsText(file);
+}
+function resetImport(){
+  importHeaders = []; importRows = []; importMapping = {}; importFileName = '';
+  renderImportView();
+}
+function onMappingChange(){
+  IMPORT_FIELDS.forEach(f=>{
+    const el = document.getElementById(`map-${f.key}`);
+    if(el) importMapping[f.key] = parseInt(el.value);
+  });
+  renderImportPreview();
+}
+function mapRowToTrade(row){
+  const get = (key)=>{
+    const idx = importMapping[key];
+    return (idx!==undefined && idx>=0 && row[idx]!==undefined) ? row[idx].trim() : '';
+  };
+  const open = parseDateTimeStr(get('openDateTime'));
+  const close = parseDateTimeStr(get('closeDateTime'));
+  const rawType = get('direction').toLowerCase();
+  const direction = rawType.includes('sell') ? 'Sell' : 'Buy';
+  const commission = parseFloat(get('commission'))||0;
+  const swap = parseFloat(get('swap'))||0;
+  return {
+    date: open.date || close.date,
+    entryTime: open.time, exitTime: close.time,
+    symbol: get('symbol'), direction,
+    lot: get('volume'), entryPrice: get('openPrice'), exitPrice: get('closePrice'),
+    sl: get('sl'), tp: get('tp'),
+    pnl: get('profit'), brokerage: (commission + swap) ? Math.abs(commission+swap).toString() : '',
+    tradeNo:'', strategy:'', ruleFollowed:true, mistakes:[], marketCondition:CONDITIONS[0],
+    emotion:EMOTIONS[0], confidence:'3', notes:'Imported from CSV', entryShot:null, exitShot:null,
+    savedAt: Date.now()
+  };
+}
+function renderImportPreview(){
+  const table = document.getElementById('import-preview');
+  const summary = document.getElementById('import-summary');
+  if(!table) return;
+  const missingRequired = IMPORT_FIELDS.filter(f=>f.required && (importMapping[f.key]===undefined || importMapping[f.key]<0));
+  const preview = importRows.slice(0,5).map(mapRowToTrade);
+  table.innerHTML = `
+    <tr><th>Date</th><th>Symbol</th><th>Dir</th><th>Entry</th><th>Exit</th><th>P&L</th></tr>
+    ${preview.map(t=>`<tr><td>${t.date||'—'}</td><td>${t.symbol||'—'}</td><td>${t.direction}</td><td>${t.entryPrice||'—'}</td><td>${t.exitPrice||'—'}</td><td>${t.pnl||'—'}</td></tr>`).join('')}
+  `;
+  const btn = document.getElementById('import-btn');
+  if(missingRequired.length){
+    summary.innerHTML = `<span class="neg">Please map: ${missingRequired.map(f=>f.label).join(', ')}</span>`;
+    if(btn) btn.style.opacity = '0.5';
+  } else {
+    summary.innerHTML = `Ready to import <b>${importRows.length}</b> trades. You can add SL, TP, strategy and screenshots later by opening each trade and tapping Edit.`;
+    if(btn) btn.style.opacity = '1';
+  }
+}
+async function performImport(){
+  const missingRequired = IMPORT_FIELDS.filter(f=>f.required && (importMapping[f.key]===undefined || importMapping[f.key]<0));
+  if(missingRequired.length){ alert('Please map all required fields first.'); return; }
+  const body = document.getElementById('view-body');
+  body.innerHTML = `<div class="import-progress">Importing 0 / ${importRows.length}...</div>`;
+  let done = 0;
+  for(const row of importRows){
+    const trade = mapRowToTrade(row);
+    if(trade.symbol){
+      try{ await tradesRef().add(trade); }catch(e){ console.error('import row failed', e); }
+    }
+    done++;
+    const prog = document.querySelector('.import-progress');
+    if(prog) prog.textContent = `Importing ${done} / ${importRows.length}...`;
+  }
+  resetImport();
+  tradesLoaded = false;
+  view = 'list';
+  await renderRoot();
+}
+
+/* ---------- Auth / Login ---------- */
+function renderLogin(errMsg){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="login-wrap">
+      <div class="login-card">
+        <h2>Trading Journal</h2>
+        <div class="sub">${authMode==='signin' ? 'Sign in with your tracker account' : 'Create an account to get started'}</div>
+        <input type="email" id="auth-email" placeholder="Email" autocomplete="email">
+        <input type="password" id="auth-pass" placeholder="Password" autocomplete="${authMode==='signin'?'current-password':'new-password'}">
+        <button class="login-btn" onclick="doAuth()">${authMode==='signin' ? 'Sign In' : 'Create Account'}</button>
+        <div class="login-error">${errMsg || ''}</div>
+        <div class="login-toggle" onclick="toggleAuthMode()">${authMode==='signin' ? "New here? Create an account" : "Already have an account? Sign in"}</div>
+      </div>
+    </div>
+  `;
+}
+function toggleAuthMode(){ authMode = authMode==='signin' ? 'signup' : 'signin'; renderLogin(); }
+async function doAuth(){
+  const email = document.getElementById('auth-email').value.trim();
+  const pass = document.getElementById('auth-pass').value;
+  if(!email || !pass){ renderLogin('Please enter email and password'); return; }
+  try{
+    if(authMode==='signin') await auth.signInWithEmailAndPassword(email, pass);
+    else await auth.createUserWithEmailAndPassword(email, pass);
+  }catch(e){ renderLogin(e.message || 'Something went wrong'); }
+}
+async function doSignOut(){ tradesLoaded = false; trades = []; await auth.signOut(); }
+
+/* ---------- Init ---------- */
+auth.onAuthStateChanged(async (user)=>{
+  if(user) await renderRoot();
+  else renderLogin();
+});
+</script>
+</body>
+</html>
