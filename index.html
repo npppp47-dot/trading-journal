@@ -220,6 +220,7 @@
 </div>
 <script>
 /* ---------- Constants ---------- */
+const SYMBOLS = ["XAUUSD","BTCUSD","USOIL"];
 const STRATEGIES = [
   "Always In","Always In Long","Always In Short","Bar Pullback","Bear Scalp","Bull Reversal","Bear Reversal",
   "Blown Account","Breakout","Breakout Bar","Breakout Mode","Breakout Pullback","Breakout Test","Failed Breakout",
@@ -395,8 +396,13 @@ function renderNewTradeForm(prefill){
         <div><label>Exit time</label><input type="time" id="f-exittime" value="${t.exitTime}"></div>
       </div>
       <div class="field row2-wrap">
-        <div><label>Script / Symbol</label><input type="text" id="f-symbol" placeholder="e.g. NIFTY, BANKNIFTY, TCS" value="${t.symbol}"></div>
+        <div><label>Script / Symbol</label><input type="text" id="f-symbol" placeholder="e.g. XAUUSD, BTCUSD, USOIL" value="${t.symbol}"></div>
         <div><label>Direction</label><select id="f-direction"><option ${t.direction==='Buy'?'selected':''}>Buy</option><option ${t.direction==='Sell'?'selected':''}>Sell</option></select></div>
+      </div>
+      <div class="field"><label>Quick select</label>
+        <div class="chips">
+          ${SYMBOLS.map(s=>`<span class="chip ${t.symbol===s?'on':''}" onclick="setSymbol('${s}')">${s}</span>`).join('')}
+        </div>
       </div>
       <div class="field row2-wrap">
         <div><label>Lot / Qty</label><input type="number" id="f-lot" value="${t.lot}" placeholder="e.g. 1"></div>
@@ -491,6 +497,11 @@ function suggestTradeNo(){
   const count = trades.filter(t=>t.date===date).length;
   const tnEl = document.getElementById('f-tradeno');
   if(tnEl && !tnEl.value) tnEl.value = count+1;
+}
+function setSymbol(s){
+  document.getElementById('f-symbol').value = s;
+  const chipsWrap = document.getElementById('f-symbol').closest('.section').querySelector('.chips');
+  if(chipsWrap) chipsWrap.querySelectorAll('.chip').forEach(c=> c.classList.toggle('on', c.textContent===s));
 }
 function toggleMistake(m){
   if(formMistakes.includes(m)) formMistakes = formMistakes.filter(x=>x!==m);
@@ -788,10 +799,19 @@ function parseDateTimeStr(str){
   const time = tm ? `${tm[1]}:${tm[2]}` : '';
   return {date, time};
 }
+function normalizeHeader(h){
+  return h.toLowerCase().replace(/[_\-\.]/g,' ').replace(/\s+/g,' ').trim();
+}
 function guessColumn(headers, keywords){
-  const lower = headers.map(h => h.toLowerCase());
+  const norm = headers.map(normalizeHeader);
+  // pass 1: exact match (avoids e.g. "take_profit" matching keyword "profit")
   for(const kw of keywords){
-    const idx = lower.findIndex(h => h.includes(kw));
+    const idx = norm.findIndex(h => h === kw);
+    if(idx !== -1) return idx;
+  }
+  // pass 2: substring match
+  for(const kw of keywords){
+    const idx = norm.findIndex(h => h.includes(kw));
     if(idx !== -1) return idx;
   }
   return -1;
